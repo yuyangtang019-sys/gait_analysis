@@ -1,0 +1,275 @@
+"""
+Flask应用主文件
+"""
+
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_bootstrap import Bootstrap
+import pandas as pd
+import numpy as np
+import json
+import os
+import sys
+
+from config import Config
+from data_processor import DataProcessor
+from analysis import GaitAnalyzer
+from prediction import GaitPredictor
+from visualization import GaitVisualizer
+
+print("正在初始化Flask应用...")
+
+# 创建Flask应用
+app = Flask(__name__)
+app.config.from_object(Config)
+Bootstrap(app)
+
+print("正在初始化组件...")
+
+# 初始化组件
+data_processor = DataProcessor()
+gait_analyzer = GaitAnalyzer(data_processor)
+gait_predictor = GaitPredictor(data_processor)
+gait_visualizer = GaitVisualizer()
+
+# 确保数据目录存在
+os.makedirs('data/models', exist_ok=True)
+
+print("正在加载数据...")
+
+# 加载数据
+try:
+    data_processor.load_all_data()
+    print("数据加载完成")
+    data_processor.process_data()
+    print("数据处理完成")
+except Exception as e:
+    print(f"数据加载或处理出错: {e}", file=sys.stderr)
+    # 继续运行，即使没有数据也能展示界面
+
+@app.route('/')
+def index():
+    """首页"""
+    # 获取数据摘要
+    data_summary = data_processor.get_data_summary()
+
+    # 创建步态类型分布图表
+    gait_type_chart = gait_visualizer.create_gait_type_distribution_chart(data_processor.processed_data)
+
+    return render_template(
+        'index.html',
+        data_summary=data_summary,
+        gait_type_chart=json.dumps(gait_type_chart)
+    )
+
+@app.route('/dashboard')
+def dashboard():
+    """仪表盘页面"""
+    # 获取步态指标
+    gait_metrics = gait_analyzer.get_gait_metrics_by_type()
+
+    # 创建步态参数图表
+    gait_params_chart = gait_visualizer.create_gait_parameters_chart(data_processor.processed_data)
+
+    # 创建传感器数据图表
+    acc_chart = gait_visualizer.create_sensor_data_chart(
+        data_processor.processed_data.head(100),
+        sensor_type='acc'
+    )
+
+    gyro_chart = gait_visualizer.create_sensor_data_chart(
+        data_processor.processed_data.head(100),
+        sensor_type='gyro'
+    )
+
+    # 创建足底压力分布图表
+    pressure_chart = gait_visualizer.create_pressure_distribution_chart(
+        data_processor.processed_data,
+        foot='both'
+    )
+
+    return render_template(
+        'dashboard.html',
+        gait_metrics=gait_metrics,
+        gait_params_chart=json.dumps(gait_params_chart),
+        acc_chart=json.dumps(acc_chart),
+        gyro_chart=json.dumps(gyro_chart),
+        pressure_chart=json.dumps(pressure_chart)
+    )
+
+@app.route('/analysis')
+def analysis():
+    """数据分析页面"""
+    # 执行相关性分析
+    correlation_data = gait_analyzer.get_correlation_matrix()
+    correlation_chart = gait_visualizer.create_correlation_heatmap(correlation_data)
+
+    # 执行PCA分析
+    pca_data = gait_analyzer.perform_pca()
+    pca_chart = gait_visualizer.create_pca_scatter_chart(pca_data)
+
+    # 执行步态类型比较
+    comparison_data = gait_analyzer.compare_gait_types()
+    comparison_chart = gait_visualizer.create_gait_comparison_radar_chart(comparison_data)
+
+    # 执行异常检测
+    anomaly_data = gait_analyzer.detect_anomalies()
+
+    return render_template(
+        'analysis.html',
+        correlation_chart=json.dumps(correlation_chart),
+        pca_chart=json.dumps(pca_chart),
+        comparison_chart=json.dumps(comparison_chart),
+        anomaly_data=anomaly_data
+    )
+
+@app.route('/prediction')
+def prediction():
+    """预测页面"""
+    try:
+        print("开始训练步态分类器...")
+        # 训练步态分类器
+        gait_classifier_result = gait_predictor.train_gait_classifier()
+
+        print("开始训练疲劳预测模型...")
+        # 训练疲劳预测模型
+        fatigue_predictor_result = gait_predictor.train_fatigue_predictor()
+
+        print("开始训练跌倒风险预测模型...")
+        # 训练跌倒风险预测模型
+        fall_risk_predictor_result = gait_predictor.train_fall_risk_predictor()
+
+        print("开始训练健康状况预测模型...")
+        # 训练健康状况预测模型
+        health_predictor_result = gait_predictor.train_health_predictor()
+
+        # 使用测试数据进行预测
+        test_data = data_processor.test_data
+        if test_data is not None and not test_data.empty:
+            print("使用测试数据进行预测...")
+
+            try:
+                gait_predictions = gait_predictor.predict_gait_type(test_data)
+                gait_chart = gait_visualizer.create_prediction_results_chart(gait_predictions, 'gait')
+            except Exception as e:
+                print(f"步态类型预测出错: {e}")
+                gait_predictions = {'success': False, 'message': f'步态类型预测出错: {str(e)}'}
+                gait_chart = {}
+
+            try:
+                fatigue_predictions = gait_predictor.predict_fatigue(test_data)
+                fatigue_chart = gait_visualizer.create_prediction_results_chart(fatigue_predictions, 'fatigue')
+            except Exception as e:
+                print(f"疲劳预测出错: {e}")
+                fatigue_predictions = {'success': False, 'message': f'疲劳预测出错: {str(e)}'}
+                fatigue_chart = {}
+
+            try:
+                fall_risk_predictions = gait_predictor.predict_fall_risk(test_data)
+                fall_risk_chart = gait_visualizer.create_prediction_results_chart(fall_risk_predictions, 'fall_risk')
+            except Exception as e:
+                print(f"跌倒风险预测出错: {e}")
+                fall_risk_predictions = {'success': False, 'message': f'跌倒风险预测出错: {str(e)}'}
+                fall_risk_chart = {}
+
+            try:
+                health_predictions = gait_predictor.predict_health_status(test_data)
+                health_chart = gait_visualizer.create_prediction_results_chart(health_predictions, 'health')
+            except Exception as e:
+                print(f"健康状况预测出错: {e}")
+                health_predictions = {'success': False, 'message': f'健康状况预测出错: {str(e)}'}
+                health_chart = {}
+        else:
+            print("没有测试数据，无法进行预测")
+            gait_predictions = {'success': False, 'message': '没有测试数据'}
+            fatigue_predictions = {'success': False, 'message': '没有测试数据'}
+            fall_risk_predictions = {'success': False, 'message': '没有测试数据'}
+            health_predictions = {'success': False, 'message': '没有测试数据'}
+
+            gait_chart = {}
+            fatigue_chart = {}
+            fall_risk_chart = {}
+            health_chart = {}
+    except Exception as e:
+        print(f"预测页面出错: {e}")
+        # 提供默认值以防止页面崩溃
+        gait_classifier_result = {'success': False, 'message': f'步态分类器训练出错: {str(e)}'}
+        fatigue_predictor_result = {'success': False, 'message': f'疲劳预测模型训练出错: {str(e)}'}
+        fall_risk_predictor_result = {'success': False, 'message': f'跌倒风险预测模型训练出错: {str(e)}'}
+        health_predictor_result = {'success': False, 'message': f'健康状况预测模型训练出错: {str(e)}'}
+
+        gait_predictions = {'success': False, 'message': '预测出错'}
+        fatigue_predictions = {'success': False, 'message': '预测出错'}
+        fall_risk_predictions = {'success': False, 'message': '预测出错'}
+        health_predictions = {'success': False, 'message': '预测出错'}
+
+        gait_chart = {}
+        fatigue_chart = {}
+        fall_risk_chart = {}
+        health_chart = {}
+
+    return render_template(
+        'prediction.html',
+        gait_classifier_result=gait_classifier_result,
+        fatigue_predictor_result=fatigue_predictor_result,
+        fall_risk_predictor_result=fall_risk_predictor_result,
+        health_predictor_result=health_predictor_result,
+        gait_predictions=gait_predictions,
+        fatigue_predictions=fatigue_predictions,
+        fall_risk_predictions=fall_risk_predictions,
+        health_predictions=health_predictions,
+        gait_chart=json.dumps(gait_chart),
+        fatigue_chart=json.dumps(fatigue_chart),
+        fall_risk_chart=json.dumps(fall_risk_chart),
+        health_chart=json.dumps(health_chart)
+    )
+
+@app.route('/api/data_summary')
+def api_data_summary():
+    """获取数据摘要API"""
+    data_summary = data_processor.get_data_summary()
+    return jsonify(data_summary)
+
+@app.route('/api/gait_metrics')
+def api_gait_metrics():
+    """获取步态指标API"""
+    gait_type = request.args.get('gait_type')
+
+    if gait_type:
+        gait_data = data_processor.get_data_by_gait_type(gait_type)
+        if gait_data is not None:
+            metrics = gait_analyzer.calculate_gait_metrics(gait_data)
+            return jsonify(metrics)
+
+    # 如果没有指定步态类型或数据获取失败，返回所有步态类型的指标
+    metrics = gait_analyzer.get_gait_metrics_by_type()
+    return jsonify(metrics)
+
+@app.route('/api/predict_gait')
+def api_predict_gait():
+    """预测步态类型API"""
+    subject_id = request.args.get('subject_id')
+
+    if subject_id:
+        subject_data = data_processor.get_data_by_subject(subject_id)
+        if subject_data is not None:
+            predictions = gait_predictor.predict_gait_type(subject_data)
+            return jsonify(predictions)
+
+    return jsonify({'success': False, 'message': '无效的受试者ID'})
+
+@app.route('/api/predict_health')
+def api_predict_health():
+    """预测健康状况API"""
+    subject_id = request.args.get('subject_id')
+
+    if subject_id:
+        subject_data = data_processor.get_data_by_subject(subject_id)
+        if subject_data is not None:
+            predictions = gait_predictor.predict_health_status(subject_data)
+            return jsonify(predictions)
+
+    return jsonify({'success': False, 'message': '无效的受试者ID'})
+
+if __name__ == '__main__':
+    print("启动Flask应用服务器...")
+    app.run(debug=True, host='127.0.0.1', port=5000)
