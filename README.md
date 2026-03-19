@@ -138,7 +138,7 @@
 
 系统使用以下数据源：
 1. **合成数据**：使用`generate_synthetic_data.py`脚本生成的模拟步态数据
-2. **Excel文件**：从`synthetic_gait_data.xlsx`和`subject_profiles.xlsx`读取数据
+2. **Excel文件**：从`synthetic_gait_data.xlsx`和`subject_profiles.xlsx`读取数据 (数据不开源，如需请联系我）
 
 ## 开发说明
 
