@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}用户分析 - 步态分析与预测系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">用户步态分析报告</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">用户信息</h5>
+            </div>
+            <div class="card-body">
+                {% if user_info %}
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <th>用户ID</th>
+                            <td>{{ user_info.subject_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>年龄</th>
+                            <td>{{ user_info.age }}</td>
+                        </tr>
+                        <tr>
+                            <th>性别</th>
+                            <td>{{ user_info.gender }}</td>
+                        </tr>
+                        <tr>
+                            <th>身高</th>
+                            <td>{{ user_info.height }} cm</td>
+                        </tr>
+                        <tr>
+                            <th>体重</th>
+                            <td>{{ user_info.weight }} kg</td>
+                        </tr>
+                        <tr>
+                            <th>健身水平</th>
+                            <td>{{ user_info.fitness_level }}</td>
+                        </tr>
+                        <tr>
+                            <th>医疗状况</th>
+                            <td>{{ user_info.medical_condition }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="alert alert-warning">
+                    请选择一个用户进行分析
+                </div>
+                {% endif %}
+                
+                <form method="get" action="{{ url_for('user_analysis') }}" class="mt-3">
+                    <div class="form-group">
+                        <label for="subject_id">选择用户</label>
+                        <select class="form-control" id="subject_id" name="subject_id">
+                            <option value="">-- 请选择 --</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject }}" {% if user_info and user_info.subject_id == subject %}selected{% endif %}>{{ subject }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-2">分析</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">步态健康评分</h5>
+            </div>
+            <div class="card-body">
+                {% if health_score %}
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        <div class="metric-card">
+                            <h3 class="metric-title">总体健康评分</h3>
+                            <div class="metric-value">{{ health_score.overall }}</div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar bg-{{ health_score.overall_color }}" role="progressbar" 
+                                     style="width: {{ health_score.overall }}%;" 
+                                     aria-valuenow="{{ health_score.overall }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ health_score.overall }}
+                                </div>
+                            </div>
+                            <p class="mt-2 text-{{ health_score.overall_color }}">{{ health_score.overall_status }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h3 class="metric-title">详细评分</h3>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th>步态稳定性</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-{{ health_score.stability_color }}" role="progressbar" 
+                                                     style="width: {{ health_score.stability }}%;" 
+                                                     aria-valuenow="{{ health_score.stability }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ health_score.stability }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>步态对称性</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-{{ health_score.symmetry_color }}" role="progressbar" 
+                                                     style="width: {{ health_score.symmetry }}%;" 
+                                                     aria-valuenow="{{ health_score.symmetry }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ health_score.symmetry }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>步态节奏</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-{{ health_score.rhythm_color }}" role="progressbar" 
+                                                     style="width: {{ health_score.rhythm }}%;" 
+                                                     aria-valuenow="{{ health_score.rhythm }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ health_score.rhythm }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>足底压力分布</th>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-{{ health_score.pressure_color }}" role="progressbar" 
+                                                     style="width: {{ health_score.pressure }}%;" 
+                                                     aria-valuenow="{{ health_score.pressure }}" aria-valuemin="0" aria-valuemax="100">
+                                                    {{ health_score.pressure }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    请选择一个用户查看健康评分
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">健康风险评估</h5>
+            </div>
+            <div class="card-body">
+                {% if risk_assessment %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="fall-risk-chart" style="width: 100%; height: 250px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="fatigue-chart" style="width: 100%; height: 250px;"></div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h5>健康建议</h5>
+                    <div class="alert alert-info">
+                        {{ risk_assessment.recommendations|safe }}
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    请选择一个用户查看健康风险评估
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">用户步态数据</h5>
+                {% if user_info %}
+                <a href="{{ url_for('export_pdf', subject_id=user_info.subject_id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-file-pdf mr-1"></i> 导出PDF报告
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="user-acc-chart" style="width: 100%; height: 300px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="user-gyro-chart" style="width: 100%; height: 300px;"></div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div id="user-pressure-chart" style="width: 100%; height: 300px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="user-gait-params-chart" style="width: 100%; height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 加速度计数据图表
+    var userAccChart = {{ user_acc_chart|safe }};
+    if (userAccChart && Object.keys(userAccChart).length > 0) {
+        var chartDom = document.getElementById('user-acc-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(userAccChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('user-acc-chart').innerHTML = '<div class="alert alert-warning">无法加载加速度计数据</div>';
+    }
+    
+    // 陀螺仪数据图表
+    var userGyroChart = {{ user_gyro_chart|safe }};
+    if (userGyroChart && Object.keys(userGyroChart).length > 0) {
+        var chartDom = document.getElementById('user-gyro-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(userGyroChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('user-gyro-chart').innerHTML = '<div class="alert alert-warning">无法加载陀螺仪数据</div>';
+    }
+    
+    // 足底压力分布图表
+    var userPressureChart = {{ user_pressure_chart|safe }};
+    if (userPressureChart && Object.keys(userPressureChart).length > 0) {
+        var chartDom = document.getElementById('user-pressure-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(userPressureChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('user-pressure-chart').innerHTML = '<div class="alert alert-warning">无法加载足底压力数据</div>';
+    }
+    
+    // 步态参数图表
+    var userGaitParamsChart = {{ user_gait_params_chart|safe }};
+    if (userGaitParamsChart && Object.keys(userGaitParamsChart).length > 0) {
+        var chartDom = document.getElementById('user-gait-params-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(userGaitParamsChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('user-gait-params-chart').innerHTML = '<div class="alert alert-warning">无法加载步态参数数据</div>';
+    }
+    
+    // 跌倒风险图表
+    var fallRiskChart = {{ fall_risk_chart|safe }};
+    if (fallRiskChart && Object.keys(fallRiskChart).length > 0) {
+        var chartDom = document.getElementById('fall-risk-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(fallRiskChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('fall-risk-chart').innerHTML = '<div class="alert alert-warning">无法加载跌倒风险数据</div>';
+    }
+    
+    // 疲劳指数图表
+    var fatigueChart = {{ fatigue_chart|safe }};
+    if (fatigueChart && Object.keys(fatigueChart).length > 0) {
+        var chartDom = document.getElementById('fatigue-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(fatigueChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('fatigue-chart').innerHTML = '<div class="alert alert-warning">无法加载疲劳指数数据</div>';
+    }
+</script>
+{% endblock %}

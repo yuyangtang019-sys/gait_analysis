@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 步态分析与预测系统{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">步态分析与预测系统</h1>
+    <p class="lead">基于传感器数据的步态分析、异常检测和健康状况预测平台</p>
+    <hr class="my-4">
+    <p>本系统利用先进的数据分析和机器学习技术，对步态数据进行深入分析，帮助识别潜在的健康问题和运动异常。</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('dashboard') }}" role="button">查看仪表盘</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">数据概览</h5>
+            </div>
+            <div class="card-body">
+                {% if data_summary %}
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        总样本数
+                        <span class="badge badge-primary badge-pill">{{ data_summary.total_samples }}</span>
+                    </li>
+                    {% if data_summary.subject_count %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        受试者数量
+                        <span class="badge badge-primary badge-pill">{{ data_summary.subject_count }}</span>
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        特征数量
+                        <span class="badge badge-primary badge-pill">{{ data_summary.features|length }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        缺失值数量
+                        <span class="badge badge-warning badge-pill">{{ data_summary.missing_values }}</span>
+                    </li>
+                </ul>
+                
+                {% if data_summary.gait_type_distribution %}
+                <h6 class="mt-4">步态类型分布:</h6>
+                <ul class="list-group list-group-flush">
+                    {% for gait_type, count in data_summary.gait_type_distribution.items() %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ gait_type }}
+                        <span class="badge badge-info badge-pill">{{ count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% else %}
+                <div class="alert alert-warning">
+                    无法获取数据摘要信息
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">步态类型分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="gait-type-chart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">系统功能</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">数据可视化</h5>
+                                <p class="card-text">直观展示步态数据和分析结果，帮助理解步态特征和模式。</p>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">查看仪表盘</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">数据分析</h5>
+                                <p class="card-text">深入分析步态特征，识别模式和异常，揭示数据中的关联和趋势。</p>
+                                <a href="{{ url_for('analysis') }}" class="btn btn-outline-primary">查看分析</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">预测功能</h5>
+                                <p class="card-text">基于机器学习模型，预测步态类型、疲劳程度、跌倒风险和健康状况。</p>
+                                <a href="{{ url_for('prediction') }}" class="btn btn-outline-primary">查看预测</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 步态类型分布图表
+    var gaitTypeChart = {{ gait_type_chart|safe }};
+    if (gaitTypeChart && Object.keys(gaitTypeChart).length > 0) {
+        var chartDom = document.getElementById('gait-type-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(gaitTypeChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('gait-type-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+</script>
+{% endblock %}

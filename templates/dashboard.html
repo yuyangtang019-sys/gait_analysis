@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}仪表盘 - 步态分析与预测系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">步态数据仪表盘</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">步态参数</h5>
+            </div>
+            <div class="card-body">
+                <div id="gait-params-chart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">加速度计数据</h5>
+            </div>
+            <div class="card-body">
+                <div id="acc-chart" style="width: 100%; height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">陀螺仪数据</h5>
+            </div>
+            <div class="card-body">
+                <div id="gyro-chart" style="width: 100%; height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">足底压力分布</h5>
+            </div>
+            <div class="card-body">
+                <div id="pressure-chart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">步态指标</h5>
+            </div>
+            <div class="card-body">
+                {% if gait_metrics %}
+                <ul class="nav nav-tabs" id="gaitMetricsTabs" role="tablist">
+                    {% for gait_type, metrics in gait_metrics.items() %}
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if loop.first %}active{% endif %}" 
+                           id="tab-{{ loop.index }}" 
+                           data-toggle="tab" 
+                           href="#metrics-{{ loop.index }}" 
+                           role="tab">{{ gait_type }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="tab-content mt-3" id="gaitMetricsContent">
+                    {% for gait_type, metrics in gait_metrics.items() %}
+                    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                         id="metrics-{{ loop.index }}" 
+                         role="tabpanel">
+                        <table class="table table-sm">
+                            <tbody>
+                                {% for feature in ['cadence', 'stride_length', 'speed', 'symmetry'] %}
+                                {% if metrics[feature + '_mean'] is defined %}
+                                <tr>
+                                    <th>{{ feature|capitalize }}</th>
+                                    <td>
+                                        {{ "%.2f"|format(metrics[feature + '_mean']) }} 
+                                        ± {{ "%.2f"|format(metrics[feature + '_std']) }}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                                
+                                {% if metrics['left_right_correlation'] is defined %}
+                                <tr>
+                                    <th>左右脚相关性</th>
+                                    <td>{{ "%.2f"|format(metrics['left_right_correlation']) }}</td>
+                                </tr>
+                                {% endif %}
+                                
+                                {% if metrics['pressure_diff_mean'] is defined %}
+                                <tr>
+                                    <th>左右脚压力差异</th>
+                                    <td>
+                                        {{ "%.2f"|format(metrics['pressure_diff_mean']) }} 
+                                        ± {{ "%.2f"|format(metrics['pressure_diff_std']) }}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    无法获取步态指标数据
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 步态参数图表
+    var gaitParamsChart = {{ gait_params_chart|safe }};
+    if (gaitParamsChart && Object.keys(gaitParamsChart).length > 0) {
+        var chartDom = document.getElementById('gait-params-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(gaitParamsChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('gait-params-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 加速度计数据图表
+    var accChart = {{ acc_chart|safe }};
+    if (accChart && Object.keys(accChart).length > 0) {
+        var chartDom = document.getElementById('acc-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(accChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('acc-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 陀螺仪数据图表
+    var gyroChart = {{ gyro_chart|safe }};
+    if (gyroChart && Object.keys(gyroChart).length > 0) {
+        var chartDom = document.getElementById('gyro-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(gyroChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('gyro-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 足底压力分布图表
+    var pressureChart = {{ pressure_chart|safe }};
+    if (pressureChart && Object.keys(pressureChart).length > 0) {
+        var chartDom = document.getElementById('pressure-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(pressureChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('pressure-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+</script>
+{% endblock %}

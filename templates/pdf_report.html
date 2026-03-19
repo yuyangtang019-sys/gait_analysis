@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>步态健康报告 - {{ subject_id }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .metric-card {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        .metric-title {
+            font-size: 1rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .recommendations {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+            .section {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>步态分析与预测系统</h1>
+        <h2>用户 {{ subject_id }} 步态健康报告</h2>
+        <p>生成日期: {{ date }}</p>
+    </div>
+    
+    <div class="section">
+        <h3>用户基本信息</h3>
+        <table class="table table-bordered">
+            <tbody>
+                {% for key, value in user_info.items() %}
+                <tr>
+                    <th style="width: 30%">{{ key }}</th>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h3>步态健康评分</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="metric-card">
+                    <h4 class="metric-title">总体健康评分</h4>
+                    <div class="metric-value text-{{ overall_color }}">{{ overall }}</div>
+                    <div class="progress">
+                        <div class="progress-bar bg-{{ overall_color }}" role="progressbar" 
+                             style="width: {{ overall }}%;" 
+                             aria-valuenow="{{ overall }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ overall }}
+                        </div>
+                    </div>
+                    <p class="mt-2 text-{{ overall_color }}">{{ overall_status }}</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="metric-card">
+                    <h4 class="metric-title">详细评分</h4>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th>步态稳定性</th>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-{{ stability_color }}" role="progressbar" 
+                                             style="width: {{ stability }}%;" 
+                                             aria-valuenow="{{ stability }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ stability }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>步态对称性</th>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-{{ symmetry_color }}" role="progressbar" 
+                                             style="width: {{ symmetry }}%;" 
+                                             aria-valuenow="{{ symmetry }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ symmetry }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>步态节奏</th>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-{{ rhythm_color }}" role="progressbar" 
+                                             style="width: {{ rhythm }}%;" 
+                                             aria-valuenow="{{ rhythm }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ rhythm }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>足底压力分布</th>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-{{ pressure_color }}" role="progressbar" 
+                                             style="width: {{ pressure }}%;" 
+                                             aria-valuenow="{{ pressure }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ pressure }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h3>健康建议</h3>
+        <div class="recommendations">
+            <ul>
+                {% for recommendation in recommendations %}
+                <li>{{ recommendation }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>本报告由步态分析与预测系统自动生成</p>
+        <p>© 2025 步态分析与预测系统 | 毕业设计项目</p>
+    </div>
+    
+    <script>
+        // 自动打印
+        window.onload = function() {
+            // 等待样式加载完成
+            setTimeout(function() {
+                window.print();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

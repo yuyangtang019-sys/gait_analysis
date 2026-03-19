@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析 - 步态分析与预测系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">步态数据分析</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">特征相关性分析</h5>
+            </div>
+            <div class="card-body">
+                <div id="correlation-chart" style="width: 100%; height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">PCA降维分析</h5>
+            </div>
+            <div class="card-body">
+                <div id="pca-chart" style="width: 100%; height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">步态类型比较</h5>
+            </div>
+            <div class="card-body">
+                <div id="comparison-chart" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">异常检测结果</h5>
+            </div>
+            <div class="card-body">
+                {% if anomaly_data %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">异常样本数</h5>
+                                <p class="card-text display-4">{{ anomaly_data.anomaly_count }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">异常比例</h5>
+                                <p class="card-text display-4">{{ "%.2f"|format(anomaly_data.anomaly_percentage) }}%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if anomaly_data.gait_anomaly_rates %}
+                <h6 class="mt-4">各步态类型异常比例:</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>步态类型</th>
+                            <th>异常比例</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gait_type, rate in anomaly_data.gait_anomaly_rates.items() %}
+                        <tr>
+                            <td>{{ gait_type }}</td>
+                            <td>{{ "%.2f"|format(rate) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                
+                <h6 class="mt-4">异常样本与正常样本特征对比:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>特征</th>
+                                <th>异常样本均值</th>
+                                <th>正常样本均值</th>
+                                <th>差异</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for feature in ['cadence', 'stride_length', 'speed', 'symmetry'] %}
+                            {% if anomaly_data.anomaly_stats[feature] is defined and anomaly_data.normal_stats[feature] is defined %}
+                            <tr>
+                                <td>{{ feature }}</td>
+                                <td>{{ "%.2f"|format(anomaly_data.anomaly_stats[feature].mean) }}</td>
+                                <td>{{ "%.2f"|format(anomaly_data.normal_stats[feature].mean) }}</td>
+                                <td>
+                                    {% set diff = (anomaly_data.anomaly_stats[feature].mean - anomaly_data.normal_stats[feature].mean) / anomaly_data.normal_stats[feature].mean * 100 %}
+                                    {% if diff > 0 %}
+                                    <span class="text-success">+{{ "%.2f"|format(diff) }}%</span>
+                                    {% else %}
+                                    <span class="text-danger">{{ "%.2f"|format(diff) }}%</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    无法获取异常检测数据
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 相关性热力图
+    var correlationChart = {{ correlation_chart|safe }};
+    if (correlationChart && Object.keys(correlationChart).length > 0) {
+        var chartDom = document.getElementById('correlation-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(correlationChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('correlation-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // PCA散点图
+    var pcaChart = {{ pca_chart|safe }};
+    if (pcaChart && Object.keys(pcaChart).length > 0) {
+        var chartDom = document.getElementById('pca-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(pcaChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('pca-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 步态类型比较雷达图
+    var comparisonChart = {{ comparison_chart|safe }};
+    if (comparisonChart && Object.keys(comparisonChart).length > 0) {
+        var chartDom = document.getElementById('comparison-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(comparisonChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('comparison-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+</script>
+{% endblock %}

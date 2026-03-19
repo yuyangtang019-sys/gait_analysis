@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}预测 - 步态分析与预测系统{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">步态预测</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">步态类型预测</h5>
+            </div>
+            <div class="card-body">
+                <div id="gait-chart" style="width: 100%; height: 300px;"></div>
+                
+                {% if gait_classifier_result and gait_classifier_result.success %}
+                <div class="mt-3">
+                    <h6>模型性能:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">准确率</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(gait_classifier_result.accuracy * 100) }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">交叉验证均值</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(gait_classifier_result.cv_mean * 100) }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mt-3">特征重要性:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>特征</th>
+                                    <th>重要性</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feature, importance in gait_classifier_result.feature_importance|dictsort(by='value', reverse=true) %}
+                                <tr>
+                                    <td>{{ feature }}</td>
+                                    <td>{{ "%.4f"|format(importance) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% elif gait_classifier_result %}
+                <div class="alert alert-warning mt-3">
+                    模型训练失败: {{ gait_classifier_result.message }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">疲劳预测</h5>
+            </div>
+            <div class="card-body">
+                <div id="fatigue-chart" style="width: 100%; height: 300px;"></div>
+                
+                {% if fatigue_predictor_result and fatigue_predictor_result.success %}
+                <div class="mt-3">
+                    <h6>模型性能:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">均方误差</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(fatigue_predictor_result.mse) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">R²值</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(fatigue_predictor_result.r2) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif fatigue_predictor_result %}
+                <div class="alert alert-warning mt-3">
+                    模型训练失败: {{ fatigue_predictor_result.message }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">跌倒风险预测</h5>
+            </div>
+            <div class="card-body">
+                <div id="fall-risk-chart" style="width: 100%; height: 300px;"></div>
+                
+                {% if fall_risk_predictor_result and fall_risk_predictor_result.success %}
+                <div class="mt-3">
+                    <h6>模型性能:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">均方误差</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(fall_risk_predictor_result.mse) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">R²值</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(fall_risk_predictor_result.r2) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif fall_risk_predictor_result %}
+                <div class="alert alert-warning mt-3">
+                    模型训练失败: {{ fall_risk_predictor_result.message }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">健康状况预测</h5>
+            </div>
+            <div class="card-body">
+                <div id="health-chart" style="width: 100%; height: 300px;"></div>
+                
+                {% if health_predictor_result and health_predictor_result.success %}
+                <div class="mt-3">
+                    <h6>模型性能:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">均方误差</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(health_predictor_result.mse) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">R²值</h5>
+                                    <p class="card-text display-4">{{ "%.2f"|format(health_predictor_result.r2) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif health_predictor_result %}
+                <div class="alert alert-warning mt-3">
+                    模型训练失败: {{ health_predictor_result.message }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 步态类型预测图表
+    var gaitChart = {{ gait_chart|safe }};
+    if (gaitChart && Object.keys(gaitChart).length > 0) {
+        var chartDom = document.getElementById('gait-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(gaitChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('gait-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 疲劳预测图表
+    var fatigueChart = {{ fatigue_chart|safe }};
+    if (fatigueChart && Object.keys(fatigueChart).length > 0) {
+        var chartDom = document.getElementById('fatigue-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(fatigueChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('fatigue-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 跌倒风险预测图表
+    var fallRiskChart = {{ fall_risk_chart|safe }};
+    if (fallRiskChart && Object.keys(fallRiskChart).length > 0) {
+        var chartDom = document.getElementById('fall-risk-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(fallRiskChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('fall-risk-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+    
+    // 健康状况预测图表
+    var healthChart = {{ health_chart|safe }};
+    if (healthChart && Object.keys(healthChart).length > 0) {
+        var chartDom = document.getElementById('health-chart');
+        var myChart = echarts.init(chartDom);
+        myChart.setOption(healthChart);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    } else {
+        document.getElementById('health-chart').innerHTML = '<div class="alert alert-warning">无法加载图表数据</div>';
+    }
+</script>
+{% endblock %}
